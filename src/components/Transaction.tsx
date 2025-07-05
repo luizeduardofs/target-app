@@ -48,7 +48,7 @@ export function Transaction({ data, onRemove }: Props) {
 
 const styles = StyleSheet.create({
   container: {
-    height: 72,
+    paddingVertical: 16,
     flexDirection: "row",
     alignItems: "center",
     gap: 7,

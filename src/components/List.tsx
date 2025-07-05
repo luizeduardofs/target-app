@@ -47,8 +47,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   listContent: {
-    gap: 16,
-    paddingTop: 16,
     paddingBottom: 72,
   },
   title: {
