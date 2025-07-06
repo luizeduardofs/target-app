@@ -4,27 +4,24 @@
     "slug": "target",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/ios-icon.png",
     "scheme": "target",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "ocm.luizeduardo.target",
+      "bundleIdentifier": "com.luizeduardo.target",
       "icon": "./assets/ios-icon.png"
     },
     "android": {
-      "package": "ocm.luizeduardo.target",
+      "package": "com.luizeduardo.target",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#3D44CD"
       },
       "edgeToEdgeEnabled": true
     },
-    "plugins": [
-      "expo-router",
-      "expo-font"
-    ],
+    "plugins": ["expo-router", "expo-font", "expo-sqlite"],
     "experiments": {
       "typedRoutes": true
     }
