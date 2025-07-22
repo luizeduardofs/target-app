@@ -62,5 +62,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: fontFamily.regular,
     color: colors.gray[600],
+    marginTop: 24,
   },
 });
