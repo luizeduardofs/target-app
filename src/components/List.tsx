@@ -36,6 +36,9 @@ export function List<T>({
         ListEmptyComponent={() => (
           <Text style={styles.empty}>{emptyMessage}</Text>
         )}
+        keyExtractor={(_, index: number) => {
+          return index.toString();
+        }}
         {...rest}
       />
     </View>

@@ -1,4 +1,5 @@
-import { Alert, StyleSheet, View } from "react-native";
+import { useCallback, useState } from "react";
+import { Alert, StatusBar, StyleSheet, View } from "react-native";
 
 import { Button } from "@/components/Button";
 import { List } from "@/components/List";
@@ -7,28 +8,14 @@ import { PageHeader } from "@/components/PageHeader";
 import { Progress } from "@/components/Progress";
 import { Transaction, TransactionProps } from "@/components/Transaction";
 import { useTargetDatabase } from "@/database/useTargetDatabase";
+import { useTransactionsDatabase } from "@/database/useTransactionsDatabase";
 import { numberToCurrency } from "@/utils/numberToCurrency";
 import { TransactionTypes } from "@/utils/TransactionTypes";
+import dayjs from "dayjs";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
-import { useCallback, useState } from "react";
-
-const transactions: TransactionProps[] = [
-  {
-    id: "1",
-    value: "R$ 300,00",
-    date: "25/07/25",
-    description: "CDB de 110% no banco Nu",
-    type: TransactionTypes.Input,
-  },
-  {
-    id: "1",
-    value: "R$ 20,00",
-    date: "25/07/25",
-    type: TransactionTypes.Output,
-  },
-];
 
 export default function InProgress() {
+  const [transactions, setTransactions] = useState<TransactionProps[]>([]);
   const [isFetching, setIsFetching] = useState(true);
   const [details, setDetails] = useState({
     name: "",
@@ -40,8 +27,9 @@ export default function InProgress() {
   const params = useLocalSearchParams<{ id: string }>();
 
   const targetDatabase = useTargetDatabase();
+  const transactionsDatabase = useTransactionsDatabase();
 
-  async function fetchDetails() {
+  async function fetchTargetDetails() {
     try {
       const response = await targetDatabase.show(Number(params.id));
       setDetails({
@@ -56,10 +44,49 @@ export default function InProgress() {
     }
   }
 
-  async function fetchData() {
-    const targetDetailsPromise = fetchDetails();
+  async function fetchTransactions() {
+    try {
+      const response = await transactionsDatabase.listByTargetId(
+        Number(params.id)
+      );
+      setTransactions(
+        response.map((item) => ({
+          id: String(item.id),
+          value: numberToCurrency(item.amount),
+          date: dayjs(item.created_at).format("DD/MM/YYYY [às] HH:mm"),
+          description: item.observation,
+          type:
+            item.amount < 0 ? TransactionTypes.Output : TransactionTypes.Input,
+        }))
+      );
+    } catch (error) {
+      Alert.alert("Erro", "Não foi possível carregar as transações");
+      console.error(error);
+    }
+  }
 
-    await Promise.all([targetDetailsPromise]);
+  async function handleTransactionRemove(id: string) {
+    Alert.alert("Remover", "Deseja realmente remover?", [
+      { text: "Não", style: "destructive" },
+      { text: "Sim", onPress: () => transactionRemove(id) },
+    ]);
+  }
+
+  async function transactionRemove(id: string) {
+    try {
+      await transactionsDatabase.remove(Number(id));
+      fetchData();
+    } catch (error) {
+      Alert.alert("Erro", "Não foi possível remover a transação");
+      console.error(error);
+    }
+  }
+
+  async function fetchData() {
+    const fetchDetailsPromise = fetchTargetDetails();
+    const fetchTransitionsPromise = fetchTransactions();
+
+    await Promise.all([fetchDetailsPromise, fetchTransitionsPromise]);
     setIsFetching(false);
   }
 
@@ -73,6 +100,7 @@ export default function InProgress() {
 
   return (
     <View style={styles.container}>
+      <StatusBar barStyle={"dark-content"} />
       <PageHeader
         title={details.name}
         rightButton={{
@@ -86,7 +114,10 @@ export default function InProgress() {
         title="Transações"
         data={transactions}
         renderItem={({ item }) => (
-          <Transaction data={item} onRemove={() => {}} />
+          <Transaction
+            data={item}
+            onRemove={() => handleTransactionRemove(item.id)}
+          />
         )}
         emptyMessage="Nenhuma transação. Click em nova transação para guardar seu primeiro dinheiro aqui"
       />

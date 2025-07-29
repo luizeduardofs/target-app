@@ -3,29 +3,26 @@ import { useCallback, useState } from "react";
 import { Alert, StatusBar, StyleSheet, View } from "react-native";
 
 import { Button } from "@/components/Button";
-import { HomeHeader } from "@/components/HomeHeader";
+import { HomeHeader, HomeHeaderProps } from "@/components/HomeHeader";
 import { List } from "@/components/List";
 import { Loading } from "@/components/Loading";
 import { Target, type TargetProps } from "@/components/Target";
 import { useTargetDatabase } from "@/database/useTargetDatabase";
+import { useTransactionsDatabase } from "@/database/useTransactionsDatabase";
 import { numberToCurrency } from "@/utils/numberToCurrency";
 import { router, useFocusEffect } from "expo-router";
 
-const summary = {
-  total: "R$ 2.657,00",
-  input: { label: "Entradas", value: "R$ 6.187,94" },
-  output: { label: "Saídas", value: "-R$ 2.715,40" },
-};
-
 export default function Index() {
+  const [summary, setSummary] = useState<HomeHeaderProps>();
   const [isFetching, setIsFetching] = useState(true);
   const [targets, setTargets] = useState<TargetProps[]>([]);
 
   const targetDatabase = useTargetDatabase();
+  const transactionsDatabase = useTransactionsDatabase();
 
   async function fetchTargets() {
     try {
-      const response = await targetDatabase.listBySavedValues();
+      const response = await targetDatabase.listByClosestTarget();
       return response.map((item) => ({
         id: String(item.id),
         name: item.name,
@@ -39,12 +36,38 @@ export default function Index() {
     }
   }
 
+  async function fetchSummary() {
+    try {
+      const response = await transactionsDatabase.summary();
+
+      return {
+        total: numberToCurrency(response?.input! + response?.output!),
+        input: {
+          label: "Entradas",
+          value: numberToCurrency(response?.input!),
+        },
+        output: {
+          label: "Saídas",
+          value: numberToCurrency(response?.output!),
+        },
+      };
+    } catch (error) {
+      Alert.alert("Erro", "Não foi possível carregar o resumo");
+      console.error(error);
+    }
+  }
+
   async function fetchData() {
     const targetDataPromise = fetchTargets();
+    const dataSummaryPromise = fetchSummary();
 
-    const [targetData] = await Promise.all([targetDataPromise]);
+    const [targetData, dataSummary] = await Promise.all([
+      targetDataPromise,
+      dataSummaryPromise,
+    ]);
 
     setTargets(targetData!);
+    setSummary(dataSummary);
     setIsFetching(false);
   }
 
@@ -59,7 +82,7 @@ export default function Index() {
   return (
     <View style={styles.container}>
       <StatusBar barStyle={"light-content"} />
-      <HomeHeader data={summary} />
+      <HomeHeader data={summary!} />
       <List
         title="Metas"
         keyExtractor={(item) => item.id!}
